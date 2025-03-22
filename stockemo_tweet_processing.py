@@ -35,14 +35,20 @@ def preprocess_tweet_data_from_csv(csv_file, save_path):
     return df
 
 # Example usage
-csv_file = "tweet/train_stockemo.csv"  # Input CSV file path
-save_path = "tweet/processed_train_stockemo.csv"  # Save cleaned tweets in the tweet folder
+# csv_file = "tweet/train_stockemo.csv"  # Input CSV file path
+# save_path = "tweet/processed_train_stockemo.csv"  # Save cleaned tweets in the tweet folder
 
-processed_data = preprocess_tweet_data_from_csv(csv_file, save_path)
-print(processed_data.head())
+# processed_data = preprocess_tweet_data_from_csv(csv_file, save_path)
+# print(processed_data.head())
 
-csv_file = "tweet/val_stockemo.csv"  # Input CSV file path
-save_path = "tweet/processed_val_stockemo.csv"  # Save cleaned tweets in the tweet folder
+# csv_file = "tweet/val_stockemo.csv"  # Input CSV file path
+# save_path = "tweet/processed_val_stockemo.csv"  # Save cleaned tweets in the tweet folder
+
+# processed_data = preprocess_tweet_data_from_csv(csv_file, save_path)
+# print(processed_data.head())
+
+csv_file = "tweet/test_stockemo.csv"  # Input CSV file path
+save_path = "tweet/processed_test_stockemo.csv"  # Save cleaned tweets in the tweet folder
 
 processed_data = preprocess_tweet_data_from_csv(csv_file, save_path)
 print(processed_data.head())
