@@ -7,3 +7,4 @@ pandas_datareader
 yahooquery
 huggingface_hub[cli]
 datasets
+transformers
