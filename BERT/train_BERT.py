@@ -6,3 +6,6 @@ tokenizer = BertTokenizer.from_pretrained(save_directory)
 model = BertModel.from_pretrained(save_directory)
 
 print("Model and tokenizer loaded successfully!")
+
+
+
