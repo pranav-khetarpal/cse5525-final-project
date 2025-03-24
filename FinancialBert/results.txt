@@ -1,0 +1,15 @@
+Test Accuracy: 0.506
+
+Classification Report:               
+
+precision    recall  f1-score   support
+
+     bearish       0.45      0.47      0.46       445
+     bullish       0.56      0.53      0.55       555
+
+    accuracy                           0.51      1000
+   macro avg       0.50      0.50      0.50      1000
+weighted avg       0.51      0.51      0.51      1000
+
+Confusion Matrix: [[210 235]
+ [259 296]]
