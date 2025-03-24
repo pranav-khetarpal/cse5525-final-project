@@ -1,3 +1,4 @@
+# General data science packages
 yfinance
 pandas
 numpy
@@ -5,6 +6,18 @@ matplotlib
 seaborn
 pandas_datareader
 yahooquery
-huggingface_hub[cli]
-datasets
+
+# FinancialBERT related packages
+torch
 transformers
+huggingface_hub
+tokenizers
+safetensors
+
+# For data loading and processing
+datasets
+tqdm
+pyyaml
+fsspec
+requests
+regex
