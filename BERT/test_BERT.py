@@ -38,7 +38,7 @@ else:
 print("Model and tokenizer loaded successfully!")
 
 # Define the test file path
-test_file = "/Users/adewaleadenle/Downloads/Dev/Junior/cse5525-final-project/tweet/processed_test_stockemo.csv"
+test_file = "tweet/processed_test_stockemo.csv"
 
 # Load the test data
 print(f"Loading test data from {test_file}...")
