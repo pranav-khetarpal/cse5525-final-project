@@ -10,14 +10,4 @@ yahooquery
 # FinancialBERT related packages
 torch
 transformers
-huggingface_hub
-tokenizers
-safetensors
-
-# For data loading and processing
-datasets
-tqdm
-pyyaml
-fsspec
-requests
-regex
+scikit-learn
