@@ -1,1 +1,5 @@
-Accuracy: 0.4530
+Number of examples tested: 1000
+Accuracy: 0.4440
+Precision: 0.4943
+Recall: 0.0775
+F1 Score: 0.1340

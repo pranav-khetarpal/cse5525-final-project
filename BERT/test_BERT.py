@@ -2,6 +2,7 @@ import pandas as pd
 from transformers import BertTokenizer, BertModel, BertForSequenceClassification
 import torch
 import torch.nn as nn
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 # function to preprocess the tweet and get the tokenized inputs
 def tokenize_tweet(text, tokenizer, max_length=128):
@@ -20,8 +21,11 @@ df = pd.read_csv(test_file)
 
 # get the cleaned tweet column and the sentiment labels
 tweets = df["cleaned_tweet"].tolist()
-true_labels = df["senti_label"].tolist()
+true_labels_str = df["senti_label"].tolist() # original string labels
 
+# map string labels to numerical values
+label_mapping = {"bearish": 0, "bullish": 1}
+true_labels = [label_mapping[label] for label in true_labels_str]  # Convert to numeric
 
 # load BERT model and tokenizer from the 'bert_model' folder
 save_directory = "./bert_model"
@@ -48,18 +52,19 @@ for tweet in tweets:
     probabilities = nn.functional.softmax(logits, dim=-1)
     predicted_class = torch.argmax(probabilities, dim=-1).item()
 
-    # map the predicted class to the sentiment (0 -> bearish, 1 -> bullish)
-    sentiment_map = {0: "bearish", 1: "bullish"}
-    predicted_sentiment = sentiment_map[predicted_class]
-
     # append prediction to the list
-    predictions.append(predicted_sentiment)
+    predictions.append(predicted_class)
 
-# add the predictions to the DataFrame for evaluation
-df['predicted_sentiment'] = predictions
+# compute evaluation metrics
+accuracy = accuracy_score(true_labels, predictions)
+precision = precision_score(true_labels, predictions, average="binary")
+recall = recall_score(true_labels, predictions, average="binary")
+f1 = f1_score(true_labels, predictions, average="binary")
 
-
-# compare the predictions with the true labels
-df['correct'] = df['predicted_sentiment'] == df['senti_label']
-accuracy = df['correct'].mean()
+# output the results
+num_examples = len(true_labels)
+print(f"Number of examples tested: {num_examples}")
 print(f"Accuracy: {accuracy:.4f}")
+print(f"Precision: {precision:.4f}")
+print(f"Recall: {recall:.4f}")
+print(f"F1 Score: {f1:.4f}")

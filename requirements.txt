@@ -8,3 +8,4 @@ yahooquery
 huggingface_hub[cli]
 datasets
 transformers
+scikit-learn
