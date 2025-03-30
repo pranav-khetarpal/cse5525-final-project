@@ -21,7 +21,7 @@ try:
     print("Loading FinancialBERT model and tokenizer from local directory...")
 
     # Use relative path with ./ to ensure correct directory is found
-    model_path = "./models/financial_bert"
+    model_path = "./financial_bert_model"
 
     # First load the tokenizer
     tokenizer = AutoTokenizer.from_pretrained(model_path)

@@ -48,7 +48,7 @@ try:
 
     print("\nLoading FinancialBERT model and tokenizer .")
 
-    model_path = "models/financial_bert"
+    model_path = "financial_bert_model"
     # Load tokenizer and model directly from HuggingFace
     tokenizer = BertTokenizer.from_pretrained(model_path)
     print("Tokenizer loaded successfully!")
