@@ -1,9 +1,14 @@
+import os
+import sys
 import argparse
+from typing import Optional
 import torch
 from torch.utils.data import TensorDataset
+import transformers
 from transformers import BertTokenizer, BertForSequenceClassification
 from torch.utils.data import Dataset, DataLoader
 import pandas as pd
+from transformers.pytorch_utils import ALL_LAYERNORM_LAYERS
 
 DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
@@ -23,7 +28,6 @@ def get_args():
     parser.add_argument('--model_name', type=str, default="BERT", choices=["BERT, FinancialBERT"], help="What model to fine-tune")
 
     # Training hyperparameters
-    parser.add_argument('--optimizer_type', type=str, default="AdamW", choices=["AdamW"], help="What optimizer to use")
     parser.add_argument('--learning_rate', type=float, default=1e-1)
     parser.add_argument('--weight_decay', type=float, default=0)
     parser.add_argument('--scheduler_type', type=str, default="cosine", choices=["none", "cosine", "linear"], help="Whether to use a LR scheduler and what type to use if so")
@@ -49,12 +53,24 @@ def load_data(args) -> tuple[DataLoader, DataLoader, DataLoader]:
 
         """
         data_frame = pd.read_csv(filepath_or_buffer=file_path)
-        input_tensors = tokenizer(data_frame['cleaned_tweet'], return_tensors="pt") # TODO this is maybe a dictionary, not actual Tensors
 
-        dataset = TensorDataset(tensors=input_tensors) # create TensorDatasets to pass to DataLoaders
+        sentiment_map = {"bearish": 0, "bullish": 1}
+        labels = data_frame['senti_label'].map(sentiment_map).values # get the labels for examples
+
+        dictionary = tokenizer(
+            data_frame['cleaned_tweet'].tolist(), 
+            return_tensors="pt"
+        ) # dictionary from which we can extract needed information
+
+        dataset = TensorDataset(
+            dictionary['input_ids'],
+            dictionary['attention_mask'],
+            torch.tensor(labels)
+        ) # create TensorDatasets to pass to DataLoaders
+
         return dataset
 
-    tokenizer = BertTokenizer.from_pretrained(BERT_PATH) # TODO tokenizer should not matter whether we are training BERT or FinancialBERT
+    tokenizer = BertTokenizer.from_pretrained(BERT_PATH) # tokenizer should not matter whether we are training BERT or FinancialBERT
 
     train_dataset = process_file(tokenizer=tokenizer, file_path=TRAIN_DATA) # getting TensorDatasets, which is basically like Dataset
     val_dataset = process_file(tokenizer=tokenizer, file_path=VAL_DATA)
@@ -64,7 +80,7 @@ def load_data(args) -> tuple[DataLoader, DataLoader, DataLoader]:
     val_loader = DataLoader(dataset=val_dataset, batch_size=args.batch_size, shuffle=False)
     test_loader = DataLoader(dataset=test_dataset, batch_size=args.batch_size, shuffle=False)
 
-    return (train_loader, val_loader, test_loader)
+    return train_loader, val_loader, test_loader
 
 
 def initialize_model(args) -> BertForSequenceClassification:
@@ -85,6 +101,91 @@ def initialize_model(args) -> BertForSequenceClassification:
         print("ERROR: Model name chosen is not one of BERT or FinancialBERT.")
 
 
+def initialize_optimizer_and_scheduler(args, model, epoch_length) -> tuple[torch.optim.Optimizer, Optional[torch.optim.lr_scheduler._LRScheduler]]:
+    """
+    """
+    
+    def get_parameter_names(model, forbidden_layer_types):
+        """
+        Getting all the names of the model's parameters, with no forbidden layer types.
+        """
+        result = []
+        for name, child in model.named_children():
+            result += [
+                f"{name}.{n}"
+                for n in get_parameter_names(child, forbidden_layer_types)
+                if not isinstance(child, tuple(forbidden_layer_types))
+            ]
+        
+        result += list(model._parameters.keys())
+        return result
+    
+    # Get parameters that should have weight decay
+    decay_parameters = get_parameter_names(model, ALL_LAYERNORM_LAYERS)
+    decay_parameters = [name for name in decay_parameters if "bias" not in name] # decay parameters do not involve 'bias'
+
+    # Group parameters for optimizer
+    optimizer_grouped_parameters = [
+        {
+            "params": [p for n, p in model.named_parameters() if n in decay_parameters], # list of decay_paramters that we want to do weight_decay on
+            "weight_decay": args.weight_decay,
+        },
+        {
+            "params": [p for n, p in model.named_parameters() if n not in decay_parameters], # list of decay_paramters that we do NOT want to do weight_decay on
+            "weight_decay": 0.0,
+        },
+    ]
+
+    optimizer = torch.optim.AdamW(
+        optimizer_grouped_parameters,
+        lr=args.learning_rate,
+        eps=1e-8,
+        betas=(0.9, 0.999)
+    )
+
+    num_training_steps = epoch_length * args.max_n_epochs
+    num_warmup_steps = epoch_length * args.num_warmup_epochs
+
+    if args.scheduler_type == "none":
+        scheduler = None
+    elif args.scheduler_type == "cosine":
+        scheduler = transformers.get_cosine_schedule_with_warmup(optimizer=optimizer, num_warmup_steps=num_warmup_steps, num_training_steps=num_training_steps)
+    elif args.scheduler_type == "linear":
+        scheduler = transformers.get_linear_schedule_with_warmup(optimizer=optimizer, num_warmup_steps=num_warmup_steps, num_training_steps=num_training_steps)
+    else:
+        raise NotImplementedError
+    
+    return optimizer, scheduler
+
+def train():
+    """
+    """
+
+def load_model_from_checkpoint(args, best):
+    """
+    """
+    model_name = args.model_name
+    checkpoint_dir = os.path.join("checkpoint", f"{model_name}_experiments") # create folder for BERT or FinancialBERT
+    best_or_last_file_name = "best_model.pt" if best else "last_model.pt"
+    path = os.path.join(checkpoint_dir, best_or_last_file_name) # get .pt of the best model or last model
+
+    model = initialize_model(args)
+
+    if os.path.exists(path):
+        try:
+            checkpoint_model_weights = torch.load(path)
+            model.load_state_dict(checkpoint_model_weights)
+            print(f"Successfully loaded model from {path}")
+        except FileExistsError:
+            print(f"ERROR: Could not load model from {path}")
+    else:
+        print(f"ERROR: The path does not exist: {path}")
+
+    model.to(DEVICE)
+
+    return model
+
+
 def main():
     # Get key arguments
     args = get_args()
@@ -93,9 +194,10 @@ def main():
     train_loader, val_loader, test_loader = load_data(args=args)
 
     model = initialize_model(args)
-    # optimizer, scheduler = initialize_optimizer_and_scheduler(args, model, len(train_loader))
+    optimizer, scheduler = initialize_optimizer_and_scheduler(args, model, len(train_loader))
 
+    # train
 
-
-
+    # load from checkpoint
+    model = load_model_from_checkpoint(args, best=True) # after training, get the best model
     
