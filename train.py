@@ -157,9 +157,6 @@ def initialize_optimizer_and_scheduler(args, model, epoch_length) -> tuple[torch
     
     return optimizer, scheduler
 
-def train():
-    """
-    """
 
 def load_model_from_checkpoint(args, best):
     """
@@ -186,7 +183,29 @@ def load_model_from_checkpoint(args, best):
     return model
 
 
-# TODO: NEED TO IMPLEMENT SAVE_MODEL NEXT !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+def save_model(checkpoint_dir, model, best):
+    """
+    checkpoint_dir: the folder of where to the save the model
+    """
+
+    if best:
+        file_name = "best_model.pt"
+    else:
+        file_name = "last_model.pt"
+
+    path = os.path.join(checkpoint_dir, file_name)
+    torch.save(model.state_dict(), path)
+    print(f"\nModel Saved at {path}\n\n")
+
+
+def train(args, model, train_loader, val_loader, optimizer, scheduler):
+    """
+    """
+
+def train_epoch(args, model, train_loader, optimizer, scheduler):
+    """
+    """
+
 
 
 def main():
