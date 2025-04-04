@@ -61,8 +61,16 @@ def load_data(args) -> tuple[DataLoader, DataLoader, DataLoader]:
         sentiment_map = {"bearish": 0, "bullish": 1}
         labels = data_frame['senti_label'].map(sentiment_map).values # get the labels for examples
 
+        # dictionary = tokenizer(
+        #     data_frame['cleaned_tweet'].tolist(), 
+        #     return_tensors="pt"
+        # ) # dictionary from which we can extract needed information
+
         dictionary = tokenizer(
-            data_frame['cleaned_tweet'].tolist(), 
+            data_frame['cleaned_tweet'].tolist(),
+            padding="max_length",
+            truncation=True,
+            max_length=128,
             return_tensors="pt"
         ) # dictionary from which we can extract needed information
 
@@ -213,7 +221,7 @@ def train(args, model, train_loader, val_loader, optimizer, scheduler):
     model_name = args.model_name
     checkpoint_dir = os.path.join("checkpoint", f"{model_name}_experiments") # create folder for BERT or FinancialBERT
 
-    for epoch in range(len(args.max_n_epochs)):
+    for epoch in range(args.max_n_epochs):
         average_train_loss, average_train_accurracy = train_epoch(args, model, train_loader, optimizer, scheduler)
         print(f"\nEpoch {epoch}: Average train loss was {average_train_loss:.4f}, Average accurracy was {average_train_accurracy:.4f}\n")
 
@@ -266,7 +274,7 @@ def train_epoch(args, model, train_loader, optimizer, scheduler):
 
         total_loss += loss.item() # since we are doing sentiment classification, loss is just the loss on the predicted label (of the batch) ???
 
-        predicted = torch.max(logits, 1)
+        _, predicted = torch.max(logits, 1)
         total_num_labels += senti_label.size(0)
         correctly_predicted_labels += (predicted == senti_label).sum().item()
     
