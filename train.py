@@ -3,12 +3,16 @@ import sys
 import argparse
 from typing import Optional
 import torch
+import torch.nn as nn
 from torch.utils.data import TensorDataset
 import transformers
 from transformers import BertTokenizer, BertForSequenceClassification
 from torch.utils.data import Dataset, DataLoader
 import pandas as pd
+from tqdm import tqdm
 from transformers.pytorch_utils import ALL_LAYERNORM_LAYERS
+import numpy
+from sklearn.metrics import f1_score
 
 DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
@@ -188,6 +192,8 @@ def save_model(checkpoint_dir, model, best):
     checkpoint_dir: the folder of where to the save the model
     """
 
+    os.makedirs(checkpoint_dir, exist_ok=True) # automatically create the directory if it does not exist, otherwise, treat it like normal
+
     if best:
         file_name = "best_model.pt"
     else:
@@ -201,11 +207,106 @@ def save_model(checkpoint_dir, model, best):
 def train(args, model, train_loader, val_loader, optimizer, scheduler):
     """
     """
+    best_f1 = -1
+    epochs_since_improvement = 0
+
+    model_name = args.model_name
+    checkpoint_dir = os.path.join("checkpoint", f"{model_name}_experiments") # create folder for BERT or FinancialBERT
+
+    for epoch in range(len(args.max_n_epochs)):
+        average_train_loss, average_train_accurracy = train_epoch(args, model, train_loader, optimizer, scheduler)
+        print(f"\nEpoch {epoch}: Average train loss was {average_train_loss:.4f}, Average accurracy was {average_train_accurracy:.4f}\n")
+
+        average_eval_loss, labels_f1 = eval_epoch(args, model, val_loader)
+        print(f"Average evaluation loss was {average_eval_loss:.4f}, F1 score was {labels_f1:.4f}")
+
+        if labels_f1 > best_f1: # found a better F1 score than previously found
+            best_f1 = labels_f1
+            epochs_since_improvement = 0
+        else: # f1 score is worse than best found so far
+            epochs_since_improvement += 1
+
+        save_model(checkpoint_dir, model, best=False) # save the last checkpoint for the model
+        if epochs_since_improvement == 0: # save the best model checkpoint
+            save_model(checkpoint_dir, model, best=True)
+
+        if epochs_since_improvement >= args.patience_epochs: # patience epochs reached, so stop
+            print(f"Early stopping triggered at epoch: {epoch+1}")
+            break
+
 
 def train_epoch(args, model, train_loader, optimizer, scheduler):
     """
     """
+    model.train()
+    total_loss = 0
+    loss_function = nn.CrossEntropyLoss()
 
+    total_num_labels = 0
+    correctly_predicted_labels = 0
+
+    for input_ids, attention_mask, senti_label in tqdm(train_loader):
+        optimizer.zero_grad()
+
+        input_ids = input_ids.to(DEVICE)
+        attention_mask = attention_mask.to(DEVICE)
+        senti_label = senti_label.to(DEVICE)
+
+        outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+        logits = outputs.logits
+        
+        # using CrossEntropyLoss
+        loss = loss_function(logits, senti_label)
+        
+        # Backward pass and optimize
+        loss.backward()
+        optimizer.step()
+        if scheduler is not None:
+            scheduler.step()
+
+        total_loss += loss.item() # since we are doing sentiment classification, loss is just the loss on the predicted label (of the batch) ???
+
+        predicted = torch.max(logits, 1)
+        total_num_labels += senti_label.size(0)
+        correctly_predicted_labels += (predicted == senti_label).sum().item()
+    
+    average_loss = total_loss / len(train_loader)
+    average_accurracy = correctly_predicted_labels / total_num_labels
+
+    return average_loss, average_accurracy
+
+
+def eval_epoch(args, model, val_loader):
+    """
+    """
+    model.eval()
+    total_loss = 0
+    loss_function = nn.CrossEntropyLoss()
+
+    actual_numerical_classes = [] # the true, actual classes
+    all_predicted_numerical_classes = [] # numerical scores for the predicted classes
+
+    with torch.no_grad():
+        for input_ids, attention_mask, senti_label in tqdm(val_loader):
+            input_ids = input_ids.to(DEVICE)
+            attention_mask = attention_mask.to(DEVICE)
+            senti_label = senti_label.to(DEVICE)
+
+            outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+            logits = outputs.logits
+            
+            # using CrossEntropyLoss
+            loss = loss_function(logits, senti_label)
+            total_loss += loss.item()
+
+            _, predicted = torch.max(logits, 1)
+            all_predicted_numerical_classes.extend(predicted.cpu().numpy())
+            actual_numerical_classes.extend(senti_label.cpu().numpy())
+
+        average_loss = total_loss / len(val_loader)
+        f1 = f1_score(actual_numerical_classes, all_predicted_numerical_classes, average='weighted')
+
+        return average_loss, f1
 
 
 def main():
@@ -219,7 +320,14 @@ def main():
     optimizer, scheduler = initialize_optimizer_and_scheduler(args, model, len(train_loader))
 
     # train
+    train(args, model, train_loader, val_loader, optimizer, scheduler)
 
     # load from checkpoint
     model = load_model_from_checkpoint(args, best=True) # after training, get the best model
-    
+    model.eval()
+
+    average_val_loss, val_f1_score = eval_epoch(args, model, val_loader)
+    print(f"Validation Results: Average loss was {average_val_loss}, F1 score was {val_f1_score}")
+
+    average_test_loss, test_f1_score = eval_epoch(args, model, test_loader)
+    print(f"Test Results: Average loss was {average_test_loss}, F1 score was {test_f1_score}")
