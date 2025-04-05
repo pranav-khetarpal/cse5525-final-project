@@ -61,10 +61,6 @@ def load_data(args) -> tuple[DataLoader, DataLoader, DataLoader]:
         sentiment_map = {"bearish": 0, "bullish": 1}
         labels = data_frame['senti_label'].map(sentiment_map).values # get the labels for examples
 
-        # dictionary = tokenizer(
-        #     data_frame['cleaned_tweet'].tolist(), 
-        #     return_tensors="pt"
-        # ) # dictionary from which we can extract needed information
 
         dictionary = tokenizer(
             data_frame['cleaned_tweet'].tolist(),
