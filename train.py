@@ -335,3 +335,6 @@ def main():
 
     average_test_loss, test_f1_score = eval_epoch(args, model, test_loader)
     print(f"Test Results: Average loss was {average_test_loss}, F1 score was {test_f1_score}")
+
+if __name__ == "__main__":
+    main()
