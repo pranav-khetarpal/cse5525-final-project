@@ -95,7 +95,6 @@ def load_data(args) -> tuple[DataLoader, DataLoader, DataLoader]:
         """
         print(f"Processing file: {file_path}")
         data_frame = pd.read_csv(file_path)
-        initial_size = len(data_frame)
 
         # Verify required columns exist
         required_columns = ["cleaned_tweet", "senti_label"]
@@ -108,26 +107,15 @@ def load_data(args) -> tuple[DataLoader, DataLoader, DataLoader]:
         # Map text labels to numeric values
         label_map = {"bearish": 0, "bullish": 1}
 
-        # Validate sentiment labels and count invalid ones
+        # Validate sentiment labels
         invalid_labels = data_frame[~data_frame["senti_label"].isin(label_map.keys())]
         if not invalid_labels.empty:
             print(
-                f"\nWarning: Found {len(invalid_labels)} rows with invalid sentiment labels"
+                f"\nWarning: Found {len(invalid_labels)} rows with invalid sentiment labels:"
             )
-            print("\nInvalid label distribution:")
-            invalid_label_counts = invalid_labels["senti_label"].value_counts()
-            for label, count in invalid_label_counts.items():
-                print(f"  {label}: {count} rows")
-
-            print("\nExample rows with invalid labels:")
             print(invalid_labels[["cleaned_tweet", "senti_label"]].head())
-
-            # Remove invalid rows
+            print("\nRemoving invalid rows...")
             data_frame = data_frame[data_frame["senti_label"].isin(label_map.keys())]
-            final_size = len(data_frame)
-            print(f"\nRemoved {initial_size - final_size} rows with invalid labels")
-            print(f"Remaining valid label distribution:")
-            print(data_frame["senti_label"].value_counts())
 
         labels = [label_map[label] for label in data_frame["senti_label"]]
 
@@ -145,7 +133,7 @@ def load_data(args) -> tuple[DataLoader, DataLoader, DataLoader]:
             torch.tensor(labels, dtype=torch.long),
         )
 
-        print(f"\nSuccessfully loaded {len(dataset)} examples from {file_path}")
+        print(f"Successfully loaded {len(dataset)} examples from {file_path}")
         return dataset
 
     tokenizer = BertTokenizer.from_pretrained(
@@ -439,59 +427,6 @@ def eval_epoch(args, model, val_loader):
         return average_loss, f1
 
 
-def test(args, model, test_loader):
-    """
-    Evaluate the model on the test set and print detailed metrics.
-    """
-    print("\nStarting test evaluation...")
-
-    model.eval()
-    total_loss = 0
-    loss_function = nn.CrossEntropyLoss()
-
-    all_predictions = []
-    all_labels = []
-
-    with torch.no_grad():
-        for input_ids, attention_mask, senti_label in tqdm(test_loader):
-            input_ids = input_ids.to(DEVICE)
-            attention_mask = attention_mask.to(DEVICE)
-            senti_label = senti_label.to(DEVICE)
-
-            outputs = model(input_ids=input_ids, attention_mask=attention_mask)
-            logits = outputs.logits
-
-            loss = loss_function(logits, senti_label)
-            total_loss += loss.item()
-
-            _, predicted = torch.max(logits, 1)
-            all_predictions.extend(predicted.cpu().numpy())
-            all_labels.extend(senti_label.cpu().numpy())
-
-    # Calculate metrics
-    average_loss = total_loss / len(test_loader)
-    f1 = f1_score(all_labels, all_predictions, average="weighted")
-
-    # Convert numeric predictions back to labels for better interpretability
-    label_map = {0: "bearish", 1: "bullish"}
-    text_predictions = [label_map[pred] for pred in all_predictions]
-    text_labels = [label_map[label] for label in all_labels]
-
-    # Print detailed results
-    print("\nTest Results:")
-    print(f"Average Loss: {average_loss:.4f}")
-    print(f"F1 Score: {f1:.4f}")
-
-    # Print example predictions
-    print("\nSample Predictions (first 10):")
-    print("Expected\tPredicted")
-    print("-" * 30)
-    for true, pred in zip(text_labels[:10], text_predictions[:10]):
-        print(f"{true}\t\t{pred}")
-
-    return average_loss, f1
-
-
 def main():
     # Get key arguments
     args = get_args()
@@ -499,32 +434,30 @@ def main():
     # get the Dataloader for train, validation, and test set
     train_loader, val_loader, test_loader = load_data(args=args)
 
-    if args.max_n_epochs > 0:  # Only train if epochs > 0
-        print("\n=== Starting Training ===")
-        model = initialize_model(args)
-        optimizer, scheduler = initialize_optimizer_and_scheduler(
-            args, model, len(train_loader)
-        )
-        train(args, model, train_loader, val_loader, optimizer, scheduler)
+    model = initialize_model(args)
+    optimizer, scheduler = initialize_optimizer_and_scheduler(
+        args, model, len(train_loader)
+    )
 
-    # Load the best model for evaluation
-    print("\n=== Loading Best Model for Evaluation ===")
-    model = load_model_from_checkpoint(args, best=True)
+    # train
+    train(args, model, train_loader, val_loader, optimizer, scheduler)
+
+    # load from checkpoint
+    model = load_model_from_checkpoint(
+        args, best=True
+    )  # after training, get the best model
     model.eval()
 
-    # Evaluate on validation set
-    print("\n=== Validation Set Evaluation ===")
     average_val_loss, val_f1_score = eval_epoch(args, model, val_loader)
     print(
-        f"Validation Results: Average loss was {average_val_loss:.4f}, F1 score was {val_f1_score:.4f}"
+        f"Validation Results: Average loss was {average_val_loss}, F1 score was {val_f1_score}"
     )
 
-    # Test on test set
-    print("\n=== Test Set Evaluation ===")
-    average_test_loss, test_f1_score = test(args, model, test_loader)
+    average_test_loss, test_f1_score = eval_epoch(args, model, test_loader)
     print(
-        f"Test Results: Average loss was {average_test_loss:.4f}, F1 score was {test_f1_score:.4f}"
+        f"Test Results: Average loss was {average_test_loss}, F1 score was {test_f1_score}"
     )
+
 
 if __name__ == "__main__":
     main()
