@@ -2,3 +2,4 @@
 FinancialBert/financial_bert_model/
 BERT/bert_model/
 steps.txt
+checkpoint/
