@@ -95,6 +95,7 @@ def load_data(args) -> tuple[DataLoader, DataLoader, DataLoader]:
         """
         print(f"Processing file: {file_path}")
         data_frame = pd.read_csv(file_path)
+        initial_size = len(data_frame)
 
         # Verify required columns exist
         required_columns = ["cleaned_tweet", "senti_label"]
@@ -107,15 +108,26 @@ def load_data(args) -> tuple[DataLoader, DataLoader, DataLoader]:
         # Map text labels to numeric values
         label_map = {"bearish": 0, "bullish": 1}
 
-        # Validate sentiment labels
+        # Validate sentiment labels and count invalid ones
         invalid_labels = data_frame[~data_frame["senti_label"].isin(label_map.keys())]
         if not invalid_labels.empty:
             print(
-                f"\nWarning: Found {len(invalid_labels)} rows with invalid sentiment labels:"
+                f"\nWarning: Found {len(invalid_labels)} rows with invalid sentiment labels"
             )
+            print("\nInvalid label distribution:")
+            invalid_label_counts = invalid_labels["senti_label"].value_counts()
+            for label, count in invalid_label_counts.items():
+                print(f"  {label}: {count} rows")
+
+            print("\nExample rows with invalid labels:")
             print(invalid_labels[["cleaned_tweet", "senti_label"]].head())
-            print("\nRemoving invalid rows...")
+
+            # Remove invalid rows
             data_frame = data_frame[data_frame["senti_label"].isin(label_map.keys())]
+            final_size = len(data_frame)
+            print(f"\nRemoved {initial_size - final_size} rows with invalid labels")
+            print(f"Remaining valid label distribution:")
+            print(data_frame["senti_label"].value_counts())
 
         labels = [label_map[label] for label in data_frame["senti_label"]]
 
@@ -133,7 +145,7 @@ def load_data(args) -> tuple[DataLoader, DataLoader, DataLoader]:
             torch.tensor(labels, dtype=torch.long),
         )
 
-        print(f"Successfully loaded {len(dataset)} examples from {file_path}")
+        print(f"\nSuccessfully loaded {len(dataset)} examples from {file_path}")
         return dataset
 
     tokenizer = BertTokenizer.from_pretrained(
