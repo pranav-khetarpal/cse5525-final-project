@@ -15,6 +15,7 @@ import numpy
 from sklearn.metrics import f1_score
 
 DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+# DEVICE = torch.device('mps') if torch.backends.mps.is_available() else torch.device('cpu')
 
 BERT_PATH = './BERT/bert_model'
 FINANCIAL_BERT_PATH = './FinancialBert/financial_bert_model'
@@ -52,6 +53,9 @@ def load_data(args) -> tuple[DataLoader, DataLoader, DataLoader]:
     """
     Load the data from the respective CSV file.
     """
+    
+    print("inside of load_data")
+
     def process_file(tokenizer, file_path):
         """
 
@@ -73,8 +77,10 @@ def load_data(args) -> tuple[DataLoader, DataLoader, DataLoader]:
         dataset = TensorDataset(
             dictionary['input_ids'],
             dictionary['attention_mask'],
-            torch.tensor(labels)
+            torch.tensor(labels, dtype=torch.long)
         ) # create TensorDatasets to pass to DataLoaders
+
+        print("successfully loaded the data")
 
         return dataset
 
@@ -211,6 +217,8 @@ def save_model(checkpoint_dir, model, best):
 def train(args, model, train_loader, val_loader, optimizer, scheduler):
     """
     """
+    print(f"training has started.")
+    
     best_f1 = -1
     epochs_since_improvement = 0
 
@@ -242,6 +250,8 @@ def train(args, model, train_loader, val_loader, optimizer, scheduler):
 def train_epoch(args, model, train_loader, optimizer, scheduler):
     """
     """
+    print(f"inside of train_epoch.")
+
     model.train()
     total_loss = 0
     loss_function = nn.CrossEntropyLoss()
@@ -283,6 +293,8 @@ def train_epoch(args, model, train_loader, optimizer, scheduler):
 def eval_epoch(args, model, val_loader):
     """
     """
+    print(f"inside of eval_epoch")
+
     model.eval()
     total_loss = 0
     loss_function = nn.CrossEntropyLoss()
@@ -310,6 +322,7 @@ def eval_epoch(args, model, val_loader):
         average_loss = total_loss / len(val_loader)
         f1 = f1_score(actual_numerical_classes, all_predicted_numerical_classes, average='weighted')
 
+        print(f"finished evaluating current epoch")
         return average_loss, f1
 
 
