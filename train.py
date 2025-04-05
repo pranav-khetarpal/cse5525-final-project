@@ -29,7 +29,7 @@ def get_args():
     '''
     parser = argparse.ArgumentParser(description='BERT training loop')
 
-    parser.add_argument('--model_name', type=str, default="BERT", choices=["BERT, FinancialBERT"], help="What model to fine-tune")
+    parser.add_argument('--model_name', type=str, default="BERT", choices=["BERT", "FinancialBERT"], help="What model to fine-tune")
 
     # Training hyperparameters
     parser.add_argument('--learning_rate', type=float, default=1e-1)
