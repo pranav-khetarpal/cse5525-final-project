@@ -21,7 +21,7 @@ FINANCIAL_BERT_PATH = './FinancialBert/financial_bert_model'
 
 TRAIN_DATA = './tweet/final_processed_merged_stockemo_zeroshot_train.csv'
 VAL_DATA = './tweet/final_processed_merged_stockemo_zeroshot_val.csv'
-TEST_DATA = './processed_test_stockemo.csv'
+TEST_DATA = './tweet/processed_test_stockemo.csv'
 
 def get_args():
     '''
