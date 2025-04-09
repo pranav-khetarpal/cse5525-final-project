@@ -26,7 +26,7 @@ def preprocess_tweet_data_from_csv(csv_file, save_path):
     df['cleaned_tweet'] = df['original'].apply(clean_tweet)  # Fixed column reference
 
     # Select relevant columns with ticker as the first column
-    df = df[['ticker', 'cleaned_tweet', 'senti_label']]  # Ensure correct column selection
+    df = df[['ticker', 'cleaned_tweet', 'senti_label', 'date']]  # Ensure correct column selection
 
     # Save processed data
     os.makedirs(os.path.dirname(save_path), exist_ok=True)  # Ensure directory exists
@@ -47,8 +47,23 @@ def preprocess_tweet_data_from_csv(csv_file, save_path):
 # processed_data = preprocess_tweet_data_from_csv(csv_file, save_path)
 # print(processed_data.head())
 
-csv_file = "tweet/test_stockemo.csv"  # Input CSV file path
-save_path = "tweet/processed_test_stockemo.csv"  # Save cleaned tweets in the tweet folder
+# csv_file = "tweet/test_stockemo.csv"  # Input CSV file path
+# save_path = "tweet/processed_test_stockemo.csv"  # Save cleaned tweets in the tweet folder
+
+csv_file = "tweet/old_data/train_stockemo.csv"  # Input CSV file path
+save_path = "tweet/VAR_stockemo_train.csv"  # Save cleaned tweets in the tweet folder
+
+processed_data = preprocess_tweet_data_from_csv(csv_file, save_path)
+print(processed_data.head())
+
+csv_file = "tweet/old_data/val_stockemo.csv"  # Input CSV file path
+save_path = "tweet/VAR_stockemo_val.csv"  # Save cleaned tweets in the tweet folder
+
+processed_data = preprocess_tweet_data_from_csv(csv_file, save_path)
+print(processed_data.head())
+
+csv_file = "tweet/old_data/test_stockemo.csv"  # Input CSV file path
+save_path = "tweet/VAR_stockemo_test.csv"  # Save cleaned tweets in the tweet folder
 
 processed_data = preprocess_tweet_data_from_csv(csv_file, save_path)
 print(processed_data.head())
