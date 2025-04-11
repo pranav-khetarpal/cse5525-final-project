@@ -14,8 +14,10 @@ from transformers.pytorch_utils import ALL_LAYERNORM_LAYERS
 import numpy
 from sklearn.metrics import f1_score
 
-DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-# DEVICE = torch.device('mps') if torch.backends.mps.is_available() else torch.device('cpu')
+# DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+DEVICE = (
+    torch.device("mps") if torch.backends.mps.is_available() else torch.device("cpu")
+)
 
 BERT_PATH = "./BERT/bert_model"
 FINANCIAL_BERT_PATH = "./FinancialBert/financial_bert_model"
