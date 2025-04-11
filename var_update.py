@@ -32,6 +32,11 @@ def get_args():
         default="AAPL_Close",
         help="Target column for predictions (e.g., AAPL_Close, AMZN_Close)",
     )
+    parser.add_argument(
+        "--all_columns",
+        action="store_true",
+        help="Evaluate all columns ending with _Close instead of just the target column",
+    )
 
     args = parser.parse_args()
     return args
@@ -100,48 +105,80 @@ def train_VAR_model(train_df, max_lag=10):
 
 
 def eval_VAR_model_on_val(
-    full_train_df, val_df, selected_lag, target_column="AAPL_Close"
+    full_train_df, val_df, selected_lag, target_column=None, all_columns=False
 ):
     """
     Performs rolling forecast on the test set using the trained VAR model.
+    If all_columns is True, evaluates all columns ending with '_Close'.
+    Otherwise, evaluates only the specified target_column.
     Prints and returns MSE and directional accuracy.
     """
-    predictions, actuals, direction_correct = [], [], []
     history = full_train_df.copy()
 
-    # Get the index of the target column for extracting predictions
-    col_index = list(val_df.columns).index(target_column)
+    # Identify which columns to evaluate
+    if all_columns:
+        target_columns = [col for col in val_df.columns if col.endswith("_Close")]
+        print(
+            f"Evaluating VAR model predictions for all {len(target_columns)} stock columns"
+        )
+    else:
+        if target_column is None:
+            target_column = "AAPL_Close"  # Default if none specified
+        target_columns = [target_column]
+        print(f"Evaluating VAR model predictions for {target_column}")
 
-    print(f"Evaluating VAR model predictions for {target_column}")
+    # Dictionary to store results for each column
+    results = {}
 
-    for i in range(len(val_df)):
-        model = VAR(history)
-        fitted = model.fit(selected_lag)
+    for target_col in target_columns:
+        predictions, actuals, direction_correct = [], [], []
+        # Get the index of the target column for extracting predictions
+        col_index = list(val_df.columns).index(target_col)
 
-        # Forecasted prices for the next day/time step
-        forecast = fitted.forecast(history.values[-selected_lag:], steps=1)[0]
+        for i in range(len(val_df)):
+            model = VAR(history)
+            fitted = model.fit(selected_lag)
 
-        # Predicting the target column
-        predictions.append(forecast[col_index])
-        actual = val_df.iloc[i][target_column]
-        actuals.append(actual)
+            # Forecasted prices for the next day/time step
+            forecast = fitted.forecast(history.values[-selected_lag:], steps=1)[0]
 
-        prev_close = history.iloc[-1][target_column]
-        direction_pred = np.sign(forecast[col_index] - prev_close)
-        direction_actual = np.sign(actual - prev_close)
-        direction_correct.append(direction_pred == direction_actual)
+            # Predicting the target column
+            predictions.append(forecast[col_index])
+            actual = val_df.iloc[i][target_col]
+            actuals.append(actual)
 
-        # Update the history with the actual test point
-        history = pd.concat([history, val_df.iloc[[i]]])
+            prev_close = history.iloc[-1][target_col]
+            direction_pred = np.sign(forecast[col_index] - prev_close)
+            direction_actual = np.sign(actual - prev_close)
+            direction_correct.append(direction_pred == direction_actual)
 
-    mse = mean_squared_error(actuals, predictions)
-    directional_accuracy = np.mean(direction_correct)
+            # Only update history once per iteration, regardless of how many columns we evaluate
+            if target_col == target_columns[0]:
+                # Update the history with the actual test point
+                history = pd.concat([history, val_df.iloc[[i]]])
 
-    print(f"\nPrediction target: {target_column}")
-    print(f"Validation MSE: {mse:.4f}")
-    print(f"Validation Directional Accuracy: {directional_accuracy:.4f}")
+        mse = mean_squared_error(actuals, predictions)
+        directional_accuracy = np.mean(direction_correct)
 
-    return mse, directional_accuracy, history
+        results[target_col] = {"mse": mse, "directional_accuracy": directional_accuracy}
+
+        print(f"\nPrediction target: {target_col}")
+        print(f"Validation MSE: {mse:.4f}")
+        print(f"Validation Directional Accuracy: {directional_accuracy:.4f}")
+
+    # Calculate average metrics across all columns
+    if all_columns:
+        avg_mse = np.mean([results[col]["mse"] for col in target_columns])
+        avg_dir_acc = np.mean(
+            [results[col]["directional_accuracy"] for col in target_columns]
+        )
+
+        print("\n===== SUMMARY =====")
+        print(f"Average MSE across all columns: {avg_mse:.4f}")
+        print(f"Average Directional Accuracy across all columns: {avg_dir_acc:.4f}")
+        print("===================")
+
+    return results, history
 
 
 # def eval_VAR_model_on_test(full_train_df, test_df, selected_lag):
@@ -186,7 +223,10 @@ def main():
     # Train for training, val for mini test, test for final big test
     print(f"\nRunning VAR model with command line arguments:")
     print(f"Max lag: {args.max_lag}")
-    print(f"Target column: {args.target_column}")
+    if args.all_columns:
+        print(f"Target: All stock columns")
+    else:
+        print(f"Target column: {args.target_column}")
     print(f"Train file: {args.train_file}")
     print(f"Validation file: {args.val_file}")
     print(f"Test file: {args.test_file}")
@@ -196,8 +236,8 @@ def main():
     )
     selected_lag = train_VAR_model(train_df, args.max_lag)
 
-    val_mse, val_directional_accuracy, val_history = eval_VAR_model_on_val(
-        train_df, val_df, selected_lag, args.target_column
+    val_results, val_history = eval_VAR_model_on_val(
+        train_df, val_df, selected_lag, args.target_column, args.all_columns
     )
     # test_mse, test_directional_accuracy, test_history = eval_VAR_model_on_test(val_history, test_df, selected_lag)
 
