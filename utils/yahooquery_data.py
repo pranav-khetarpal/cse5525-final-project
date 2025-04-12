@@ -55,7 +55,8 @@ tickers = [
 
 start_date = "2010-01-01"
 # end_date = datetime.now().strftime("%Y-%m-%d")
-end_date = "2020-01-01"
+end_date = "2021-01-01"
+
 
 print(f"Downloading data for {len(tickers)} tickers")
 print(f"Date range: {start_date} to {end_date}")
