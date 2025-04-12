@@ -29,9 +29,9 @@ def get_args():
 
 
 def load_var_data(train_path, val_path, test_path):
-    train_df = pd.read_csv(train_path, parse_dates=["Date"], index_col="Date")
-    val_df = pd.read_csv(val_path, parse_dates=["Date"], index_col="Date")
-    test_df = pd.read_csv(test_path, parse_dates=["Date"], index_col="Date")
+    train_df = pd.read_csv(train_path, parse_dates=["date"], index_col="date")
+    val_df = pd.read_csv(val_path, parse_dates=["date"], index_col="date")
+    test_df = pd.read_csv(test_path, parse_dates=["date"], index_col="date")
 
     # Normalization of data since ohlcv will range heavily quantifiably so just normalize Z-score validation
     mean, std = train_df.mean(), train_df.std()
