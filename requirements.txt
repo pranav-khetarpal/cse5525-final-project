@@ -11,3 +11,5 @@ yahooquery
 torch
 transformers
 scikit-learn
+
+statsmodels
