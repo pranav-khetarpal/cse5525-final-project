@@ -41,7 +41,7 @@ def load_data(train_path, val_path, test_path, window):
     val_df = (val_df - mean) / std
     test_df = (test_df - mean) / std
 
-    # Apply Moving Average Smoothing (window=5 by default)
+    # Apply Simple Moving Average Smoothing (window=5 by default)
     train_df = train_df.rolling(window=window).mean()
     val_df = val_df.rolling(window=window).mean()
     test_df = test_df.rolling(window=window).mean()
