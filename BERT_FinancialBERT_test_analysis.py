@@ -39,6 +39,13 @@ def get_args():
         help="What model to run results on",
     )
 
+    parser.add_argument(
+        "--output_csv",
+        type=str,
+        default="predictions.csv",
+        help="Where to save the prediction results",
+    )
+
     args = parser.parse_args()
     return args
 
@@ -160,6 +167,32 @@ def load_best_model_from_checkpoint(args):
 
     return model
 
+def predict_tweet_tweet(model, test_loader, test_data_frame):
+    """
+    """
+    with torch.no_grad():
+        for input_ids, attention_mask, senti_label in tqdm(test_loader):
+            input_ids = input_ids.to(DEVICE)
+            attention_mask = attention_mask.to(DEVICE)
+            senti_label = senti_label.to(DEVICE)
+
+            outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+            logits = outputs.logits
+
+            _, predicted = torch.max(logits, 1)
+            all_predicted_numerical_classes.extend(predicted.cpu().numpy())
+            actual_numerical_classes.extend(senti_label.cpu().numpy())
+
+        average_loss = total_loss / len(val_loader)
+        f1 = f1_score(
+            actual_numerical_classes,
+            all_predicted_numerical_classes,
+            average="weighted",
+        )
+
+        print(f"finished evaluating current epoch")
+        return average_loss, f1
+
 
 def main():
     # Get key arguments
@@ -177,6 +210,7 @@ def main():
 
     model.eval()
 
+    predict_test_tweet(model, test_loader, test_data_frame)
 
 
 if __name__ == "__main__":
