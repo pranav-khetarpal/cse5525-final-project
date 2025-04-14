@@ -95,18 +95,18 @@ def load_test_data(args) -> DataLoader:
         )
 
         print(f"Successfully loaded {len(dataset)} examples from {file_path}")
-        return dataset
+        return dataset, data_frame
 
     tokenizer = BertTokenizer.from_pretrained(
         BERT_PATH
     )  # tokenizer should not matter whether we are using BERT or FinancialBERT
 
-    test_dataset = process_file(tokenizer=tokenizer, file_path=TEST_DATA)
+    test_dataset, test_data_frame = process_file(tokenizer=tokenizer, file_path=TEST_DATA)
     test_loader = DataLoader(
         dataset=test_dataset, batch_size=args.batch_size, shuffle=False
     )
 
-    return test_loader
+    return test_loader, test_data_frame
 
 
 def initialize_model(args) -> BertForSequenceClassification:
@@ -161,51 +161,12 @@ def load_best_model_from_checkpoint(args):
     return model
 
 
-def eval_epoch(args, model, val_loader):
-    """ """
-    print(f"inside of eval_epoch")
-
-    model.eval()
-    total_loss = 0
-    loss_function = nn.CrossEntropyLoss()
-
-    actual_numerical_classes = []  # the true, actual classes
-    all_predicted_numerical_classes = []  # numerical scores for the predicted classes
-
-    with torch.no_grad():
-        for input_ids, attention_mask, senti_label in tqdm(val_loader):
-            input_ids = input_ids.to(DEVICE)
-            attention_mask = attention_mask.to(DEVICE)
-            senti_label = senti_label.to(DEVICE)
-
-            outputs = model(input_ids=input_ids, attention_mask=attention_mask)
-            logits = outputs.logits
-
-            # using CrossEntropyLoss
-            loss = loss_function(logits, senti_label)
-            total_loss += loss.item()
-
-            _, predicted = torch.max(logits, 1)
-            all_predicted_numerical_classes.extend(predicted.cpu().numpy())
-            actual_numerical_classes.extend(senti_label.cpu().numpy())
-
-        average_loss = total_loss / len(val_loader)
-        f1 = f1_score(
-            actual_numerical_classes,
-            all_predicted_numerical_classes,
-            average="weighted",
-        )
-
-        print(f"finished evaluating current epoch")
-        return average_loss, f1
-
-
 def main():
     # Get key arguments
     args = get_args()
 
     # get the Dataloader for the test set
-    test_loader = load_test_data(args=args)
+    test_loader, test_data_frame = load_test_data(args=args)
 
     model = initialize_model(args)
 
