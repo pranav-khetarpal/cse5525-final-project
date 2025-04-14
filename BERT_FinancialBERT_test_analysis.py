@@ -167,52 +167,123 @@ def load_best_model_from_checkpoint(args):
 
     return model
 
-def predict_tweet_tweet(model, test_loader, test_data_frame):
+
+def predict_tweet_tweet(model, test_loader, test_data_frame, args):
     """
+    Generate predictions for test tweets and save to CSV
     """
+    # Set up containers for predictions
+    all_predictions = []
+    all_labels = []
+
+    # Get ticker and date info from dataframe
+    tickers = (
+        test_data_frame["ticker"].tolist()
+        if "ticker" in test_data_frame.columns
+        else ["UNKNOWN"] * len(test_data_frame)
+    )
+    dates = (
+        test_data_frame["date"].tolist()
+        if "date" in test_data_frame.columns
+        else ["UNKNOWN"] * len(test_data_frame)
+    )
+    tweets = test_data_frame["cleaned_tweet"].tolist()
+
+    # Run prediction
+    model.eval()
     with torch.no_grad():
-        for input_ids, attention_mask, senti_label in tqdm(test_loader):
+        for batch in tqdm(test_loader, desc="Evaluating"):
+            input_ids, attention_mask, labels = batch
+
             input_ids = input_ids.to(DEVICE)
             attention_mask = attention_mask.to(DEVICE)
-            senti_label = senti_label.to(DEVICE)
+            labels = labels.to(DEVICE)
 
-            outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+            outputs = model(input_ids, attention_mask=attention_mask)
             logits = outputs.logits
 
-            _, predicted = torch.max(logits, 1)
-            all_predicted_numerical_classes.extend(predicted.cpu().numpy())
-            actual_numerical_classes.extend(senti_label.cpu().numpy())
+            # Get predictions (0=bearish, 1=bullish)
+            predictions = torch.argmax(logits, dim=1).cpu().numpy()
 
-        average_loss = total_loss / len(val_loader)
-        f1 = f1_score(
-            actual_numerical_classes,
-            all_predicted_numerical_classes,
-            average="weighted",
-        )
+            all_predictions.extend(predictions)
+            all_labels.extend(labels.cpu().numpy())
 
-        print(f"finished evaluating current epoch")
-        return average_loss, f1
+    # Create prediction dataframe
+    results_df = pd.DataFrame(
+        {
+            "ticker": tickers,
+            "date": dates,
+            "tweet": tweets,
+            "true_label": test_data_frame["senti_label"].tolist(),
+            "prediction": ["bullish" if p == 1 else "bearish" for p in all_predictions],
+            "prediction_numeric": all_predictions,
+        }
+    )
+
+    # Calculate accuracy and F1 score
+    accuracy = (
+        results_df["prediction_numeric"]
+        == [1 if l == "bullish" else 0 for l in results_df["true_label"]]
+    ).mean()
+
+    print(f"Test Accuracy: {accuracy:.4f}")
+
+    # Save predictions to CSV
+    results_df.to_csv(args.output_csv, index=False)
+    print(f"Saved predictions to {args.output_csv}")
+
+    # Create the ticker-date map structure
+    sentiment_map = {}
+
+    for _, row in results_df.iterrows():
+        ticker = row["ticker"]
+        date = row["date"]
+        pred = row["prediction_numeric"]
+
+        # Initialize ticker if not exists
+        if ticker not in sentiment_map:
+            sentiment_map[ticker] = {}
+
+        # Initialize date if not exists
+        if date not in sentiment_map[ticker]:
+            sentiment_map[ticker][date] = [0, 0]  # [total_score, count]
+
+        # Add prediction to total and increment count
+        sentiment_map[ticker][date][0] += pred
+        sentiment_map[ticker][date][1] += 1
+
+    return sentiment_map
 
 
 def main():
     # Get key arguments
     args = get_args()
 
-    # get the Dataloader for the test set
+    # Add batch_size for test_loader
+    args.batch_size = 16  # Add default batch size
+
+    # Get the Dataloader for the test set
     test_loader, test_data_frame = load_test_data(args=args)
 
+    # Initialize and load the model
     model = initialize_model(args)
-
-    # load best model from checkpoint
-    model = load_best_model_from_checkpoint(
-        args
-    )
-
+    model = load_best_model_from_checkpoint(args)
     model.eval()
 
-    predict_test_tweet(model, test_loader, test_data_frame)
+    # Generate predictions and create sentiment map
+    sentiment_map = predict_tweet_tweet(model, test_loader, test_data_frame, args)
+
+    # Save sentiment map to a file
+    map_file = f"{args.model_name}_sentiment_map.json"
+
+    # Convert to serializable format
+    import json
+
+    with open(map_file, "w") as f:
+        json.dump(sentiment_map, f, indent=2)
+
+    print(f"Saved sentiment map to {map_file}")
 
 
 if __name__ == "__main__":
     main()
-
