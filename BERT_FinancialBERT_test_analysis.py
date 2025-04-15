@@ -1,18 +1,11 @@
 import os
-import sys
 import argparse
-from typing import Optional
 import torch
-import torch.nn as nn
 from torch.utils.data import TensorDataset
-import transformers
 from transformers import BertTokenizer, BertForSequenceClassification
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 import pandas as pd
 from tqdm import tqdm
-from transformers.pytorch_utils import ALL_LAYERNORM_LAYERS
-import numpy
-from sklearn.metrics import f1_score
 
 DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
@@ -255,6 +248,29 @@ def predict_tweet_tweet(model, test_loader, test_data_frame, args):
     return sentiment_map
 
 
+def save_agerage_sentiment_to_csv(args, sentiment_map):
+    """
+    """
+
+    from collections import defaultdict
+
+    missing_key_dictionary = defaultdict(dict)
+
+    average_sentiment_csv = f"combined_model_data/{args.model_name}_average_sentiment_per_stock.csv"
+
+    for (ticker, date_dictionary) in sentiment_map.items(): # each ticker and corresponding date dictionary
+        for date, [total_score, count] in date_dictionary.items(): # each date and corresponding total tweets and scores
+            average_score = 0 # compute average score
+            if count > 0:
+                average_score = total_score / count
+            missing_key_dictionary[date][f"average_sentiment_score_{ticker}"] = average_score # add to dictionary for date, the map for the ticker and average scores, with some tickers missing
+
+    dataframe = pd.DataFrame.from_dict(missing_key_dictionary, orient="index") # keys of missing_key_dictionary should be rows
+    dataframe.index.name = "date"
+    dataframe.to_csv(average_sentiment_csv, index=False)
+    print(f"Saved average sentiment scores to {average_sentiment_csv}")
+
+
 def main():
     # Get key arguments
     args = get_args()
@@ -283,6 +299,9 @@ def main():
         json.dump(sentiment_map, f, indent=2)
 
     print(f"Saved sentiment map to {map_file}")
+
+    save_agerage_sentiment_to_csv(args, sentiment_map)
+    print(f"Saved average sentiment scores")
 
 
 if __name__ == "__main__":
