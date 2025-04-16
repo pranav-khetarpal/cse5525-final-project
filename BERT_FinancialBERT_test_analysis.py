@@ -1,21 +1,29 @@
 import os
+import sys
 import argparse
+from typing import Optional
 import torch
+import torch.nn as nn
 from torch.utils.data import TensorDataset
+import transformers
 from transformers import BertTokenizer, BertForSequenceClassification
-from torch.utils.data import DataLoader
+from torch.utils.data import Dataset, DataLoader
 import pandas as pd
 from tqdm import tqdm
+from transformers.pytorch_utils import ALL_LAYERNORM_LAYERS
+import numpy
+from sklearn.metrics import f1_score
 
 DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 BERT_PATH = "./BERT/bert_model"
 FINANCIAL_BERT_PATH = "./FinancialBert/financial_bert_model"
-
-BERT_BEST_MODEL_PATH = "./BERT/bert_model"
-FINANCIAL_BERT_BEST_MODEL_PATH = "./FinancialBert/financial_bert_model"
-
 TEST_DATA = "./tweet/processed_test_stockemo.csv"
+
+BEST_TRAINED_WEIGHTS_PATH_BERT = "./checkpoint/BERT_experiment_39.pt"
+BEST_TRAINED_WEIGHTS_PATH_FINANCIALBERT = (
+    "./checkpoint/FinancialBERT_experiment_best.pt"
+)
 
 
 def get_args():
@@ -101,7 +109,9 @@ def load_test_data(args) -> DataLoader:
         BERT_PATH
     )  # tokenizer should not matter whether we are using BERT or FinancialBERT
 
-    test_dataset, test_data_frame = process_file(tokenizer=tokenizer, file_path=TEST_DATA)
+    test_dataset, test_data_frame = process_file(
+        tokenizer=tokenizer, file_path=TEST_DATA
+    )
     test_loader = DataLoader(
         dataset=test_dataset, batch_size=args.batch_size, shuffle=False
     )
@@ -136,26 +146,45 @@ def load_best_model_from_checkpoint(args):
     Load the best BERT or FinancialBERT model from the checkpoint folder
     """
     model_name = args.model_name
-    checkpoint_dir = os.path.join(
-        "checkpoint", f"{model_name}_experiments"
-    )  # create folder for BERT or FinancialBERT
-    best_file_name = "BERT_experiment_39.pt"
-    path = os.path.join(
-        checkpoint_dir, best_file_name
-    )  # get .pt of the best model
 
+    # Set checkpoint directory and filename based on model type
+    if model_name == "BERT":
+        checkpoint_dir = os.path.join("checkpoint", "BERT_experiments")
+        best_file_name = BEST_TRAINED_WEIGHTS_PATH_BERT
+    else:  # FinancialBERT
+        checkpoint_dir = os.path.join("checkpoint", "FinancialBERT_experiments")
+        best_file_name = BEST_TRAINED_WEIGHTS_PATH_FINANCIALBERT
+
+    path = os.path.join(checkpoint_dir, best_file_name)
+
+    # Initialize the base model
     model = initialize_model(args)
 
+    # Check if checkpoint exists and load it
     if os.path.exists(path):
         try:
-            checkpoint_model_weights = torch.load(path)
-            model.load_state_dict(checkpoint_model_weights)
-            print(f"Successfully loaded model from {path}")
-        except FileExistsError:
-            print(f"ERROR: Could not load model from {path}")
-    else:
-        print(f"ERROR: The path does not exist: {path}")
+            checkpoint = torch.load(path, map_location=DEVICE)
 
+            # Handle different checkpoint formats
+            if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
+                # If checkpoint is a dictionary with model_state_dict
+                model.load_state_dict(checkpoint["model_state_dict"])
+            else:
+                # If checkpoint is just the state dict
+                model.load_state_dict(checkpoint)
+
+            print(f"Successfully loaded model from {path}")
+        except Exception as e:
+            print(f"ERROR: Could not load model from {path}")
+            print(f"Exception: {e}")
+    else:
+        print(f"ERROR: The checkpoint file does not exist: {path}")
+        print(f"Current working directory: {os.getcwd()}")
+        print(f"Available files in checkpoint dir:")
+        if os.path.exists(os.path.dirname(path)):
+            print(os.listdir(os.path.dirname(path)))
+
+    # Move model to the appropriate device
     model.to(DEVICE)
 
     return model
@@ -248,29 +277,6 @@ def predict_tweet_tweet(model, test_loader, test_data_frame, args):
     return sentiment_map
 
 
-def save_agerage_sentiment_to_csv(args, sentiment_map):
-    """
-    """
-
-    from collections import defaultdict
-
-    missing_key_dictionary = defaultdict(dict)
-
-    average_sentiment_csv = f"combined_model_data/{args.model_name}_average_sentiment_per_stock.csv"
-
-    for (ticker, date_dictionary) in sentiment_map.items(): # each ticker and corresponding date dictionary
-        for date, [total_score, count] in date_dictionary.items(): # each date and corresponding total tweets and scores
-            average_score = 0 # compute average score
-            if count > 0:
-                average_score = total_score / count
-            missing_key_dictionary[date][f"average_sentiment_score_{ticker}"] = average_score # add to dictionary for date, the map for the ticker and average scores, with some tickers missing
-
-    dataframe = pd.DataFrame.from_dict(missing_key_dictionary, orient="index") # keys of missing_key_dictionary should be rows
-    dataframe.index.name = "date"
-    dataframe.to_csv(average_sentiment_csv, index=False)
-    print(f"Saved average sentiment scores to {average_sentiment_csv}")
-
-
 def main():
     # Get key arguments
     args = get_args()
@@ -300,9 +306,7 @@ def main():
 
     print(f"Saved sentiment map to {map_file}")
 
-    save_agerage_sentiment_to_csv(args, sentiment_map)
-    print(f"Saved average sentiment scores")
-
 
 if __name__ == "__main__":
     main()
+
