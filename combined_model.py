@@ -31,9 +31,22 @@ def get_args():
         help="What confidence threshold to use"
     )
 
+    parser.add_argument(
+        "--boost_confidence",
+        type=float,
+        default=0.2,
+        help="What boost confidence to use"
+    )
     return parser.parse_args()
 
-def prediction_for_stock_and_day(auto_regression_direction, average_sentiment, base_confidence, confidence_threshold):
+
+def prediction_for_stock_and_day(
+    auto_regression_direction,
+    average_sentiment,
+    base_confidence,
+    confidence_threshold,
+    boost_confidence=0.2,
+):
     """
     """
 
@@ -42,10 +55,10 @@ def prediction_for_stock_and_day(auto_regression_direction, average_sentiment, b
 
     # If both agree, boost confidence
     if auto_regression_direction == bert_direction:
-        final_confidence = base_confidence + (0.2 * abs(average_sentiment - 0.5) * 2)
+        final_confidence = base_confidence + (boost_confidence * abs(average_sentiment - 0.5) * 2)
     else:
         # If disagree, reduce confidence based on sentiment strength
-        final_confidence = base_confidence - (0.2 * abs(average_sentiment - 0.5) * 2)
+        final_confidence = base_confidence - (boost_confidence * abs(average_sentiment - 0.5) * 2)
 
     # Final prediction remains the regression direction, but with adjusted confidence
     final_prediction = auto_regression_direction
@@ -56,11 +69,12 @@ def prediction_for_stock_and_day(auto_regression_direction, average_sentiment, b
             final_prediction = 0
         else:
             final_prediction = 1
-    
+
     # print(f"regression prediction: {final_prediction}")
     # print(f"sentiment score {average_sentiment}")
 
     return final_prediction
+
 
 def main():
     """
@@ -122,7 +136,7 @@ def main():
             average_sentiment = float(sentiment_df.loc[date, sentiment_column])
             actual_direction = int(actual_direction_df.loc[date, actual_column])
 
-            combined_model_direction = prediction_for_stock_and_day(auto_regression_direction, average_sentiment, args.base_confidence, args.confidence_threshold)
+            combined_model_direction = prediction_for_stock_and_day(auto_regression_direction, average_sentiment, args.base_confidence, args.confidence_threshold, args.boost_confidence)
 
             if combined_model_direction == actual_direction:
                 correct_stock_predictions += 1
@@ -149,4 +163,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
