@@ -96,7 +96,9 @@ def test_autoreg(train_val_df, test_df, lags):
     warnings.filterwarnings("ignore")
 
     results = {}
-    for col in train_val_df.columns:
+    prediction_df = pd.DataFrame(index=test_df.index)
+    actual_df = pd.DataFrame(index=test_df.index)
+    for col in train_val_df.columns: # each ticker
         print(f"Training AutoReg for {col}...")
 
         train_val_series = train_val_df[col].dropna()
@@ -105,10 +107,12 @@ def test_autoreg(train_val_df, test_df, lags):
         predictions = []
         actuals = []
         direction_correct = []
+        predicted_direction = []
+        actual_direction = []
 
         history = train_val_series.copy()
 
-        for i in range(len(test_series)):
+        for i in range(len(test_series)): # each day in test
             try:
                 model = AutoReg(history, lags=lags, old_names=False).fit()
                 pred = model.predict(start=len(history), end=len(history)).iloc[0]
@@ -122,14 +126,32 @@ def test_autoreg(train_val_df, test_df, lags):
 
             predictions.append(pred)
             actuals.append(actual)
-            direction_correct.append(np.sign(pred - prev) == np.sign(actual - prev))
+            direction_correct.append(np.sign(pred - prev) == np.sign(actual - prev)) # pred - prev is the predicted direction
+
+            if np.sign(pred - prev) < 0:
+                predicted_direction.append(0)
+            else:
+                predicted_direction.append(1)
+
+            if np.sign(actual - prev) < 0:
+                actual_direction.append(0)
+            else:
+                actual_direction.append(1)
+
+            # predicted_direction.append(np.sign(pred - prev)) # store the predicted direction
 
             history = pd.concat([history, pd.Series([actual], index=[test_series.index[i]])])
+        
+        prediction_df[f"{col}_predicted_direction"] = pd.Series(predicted_direction, index=test_series.index) # convert list of predictions to dataframe column
+        actual_df[f"{col}_actual_direction"] = pd.Series(actual_direction, index=test_series.index) # convert list of actual direction to dataframe column
 
         mse = mean_squared_error(actuals, predictions)
         directional_accuracy = np.mean(direction_correct)
 
         results[col] = {"mse": mse, "directional_accuracy": directional_accuracy}
+    
+    prediction_df.to_csv("combined_model_data/auto_regression_test_predictions.csv", index=True)
+    actual_df.to_csv("combined_model_data/actual_test_prediction.csv", index=True)
 
     return results
 
