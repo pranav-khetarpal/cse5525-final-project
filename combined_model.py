@@ -74,7 +74,7 @@ def main():
 
     correct_predictions = 0
     total_predictions = 0
-    stock_accurracies = {}
+    stock_accuracies = {}
 
     auto_regression_direction_df.set_index('date', inplace=True)
     sentiment_df.set_index('date', inplace=True)
@@ -96,28 +96,28 @@ def main():
             print(f"ERROR: No auto-regression data found for {stock}")
             continue
 
-        acutal_column = None
+        actual_column = None
         for actual_col in actual_direction_df.columns:
             if stock in actual_col:
-                acutal_column = actual_col
+                actual_column = actual_col
                 break
 
-        if acutal_column is None:
+        if actual_column is None:
             print(f"ERROR: No actual direction data found for {stock}")
             continue
 
         correct_stock_predictions = 0
         total_stock_predictions = 0
 
-        data_intersection_dates = auto_regression_direction_df.index.intersection(sentiment_df.index).intersection(actual_direction_df.index) # gets the intersection from the acutal, auto regression, and sentiment data .csv files
+        data_intersection_dates = auto_regression_direction_df.index.intersection(sentiment_df.index).intersection(actual_direction_df.index) # gets the intersection from the actual, auto regression, and sentiment data .csv files
 
         for date in data_intersection_dates:
-            if pd.isna(auto_regression_direction_df.loc[date, auto_regression_column]) or pd.isna(sentiment_df.loc[date, sentiment_column]) or pd.isna(actual_direction_df.loc[date, acutal_column]): # skip any dates for which there is a missing value
+            if pd.isna(auto_regression_direction_df.loc[date, auto_regression_column]) or pd.isna(sentiment_df.loc[date, sentiment_column]) or pd.isna(actual_direction_df.loc[date, actual_column]): # skip any dates for which there is a missing value
                 continue
 
             auto_regression_direction = int(auto_regression_direction_df.loc[date, auto_regression_column]) # Get values for this stock and day
             average_sentiment = float(sentiment_df.loc[date, sentiment_column])
-            actual_direction = int(actual_direction_df.loc[date, acutal_column])
+            actual_direction = int(actual_direction_df.loc[date, actual_column])
 
             combined_model_direction = prediction_for_stock_and_day(auto_regression_direction, average_sentiment, args.base_confidence, args.confidence_threshold)
 
@@ -128,10 +128,10 @@ def main():
             total_stock_predictions += 1
             total_predictions += 1
 
-            if total_stock_predictions > 0:
-                stock_accuracy = correct_stock_predictions / total_stock_predictions
-                stock_accurracies[stock] = stock_accuracy
-                print(f"{stock}: Accuracy = {stock_accuracy:.4f}")
+        if total_stock_predictions > 0:
+            stock_accuracy = correct_stock_predictions / total_stock_predictions
+            stock_accuracies[stock] = stock_accuracy
+            print(f"{stock}: Accuracy = {stock_accuracy:.4f}")
         
     auto_regression_direction_df.reset_index(inplace=True)
     sentiment_df.reset_index(inplace=True)
@@ -143,8 +143,6 @@ def main():
 
         print(f"\nBase Confidence: {args.base_confidence}, Confidence Threshold: {args.confidence_threshold}")
         print(f"Sentiment Model Used: {args.model_name}")
-
-              
 
 if __name__ == "__main__":
     main()
