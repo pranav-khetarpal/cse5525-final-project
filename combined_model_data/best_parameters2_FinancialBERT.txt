@@ -1,0 +1,5 @@
+Model: FinancialBERT
+Base Confidence: 0.2
+Confidence Threshold: 0.1
+Boost Confidence: 0.1
+Accuracy: 0.8857
