@@ -1,0 +1,286 @@
+BERT on its test dataset
+
+(nlp_fp) C:\GitHub\cse5525-final-project>python BERT_FinancialBERT_test_f1.py --model_name BERT
+inside of load_data
+Processing file: ./combined_model_data/processed_test_stockemo_with_dates.csv
+Successfully loaded 1000 examples from ./combined_model_data/processed_test_stockemo_with_dates.csv
+Some weights of BertForSequenceClassification were not initialized from the model checkpoint at ./BERT/bert_model and are newly initialized: ['classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+Some weights of BertForSequenceClassification were not initialized from the model checkpoint at ./BERT/bert_model and are newly initialized: ['classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+C:\GitHub\cse5525-final-project\BERT_FinancialBERT_test_f1.py:157: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  checkpoint = torch.load(path, map_location=DEVICE)
+Successfully loaded model from checkpoint\BERT_experiments\BERT_experiment_39.pt
+Evaluating: 100%|██████████████████████████████████████████████████████████████████████| 63/63 [03:21<00:00,  3.19s/it]
+Test Accuracy: 0.7600
+Test F1 Score: 0.7602
+
+(nlp_fp) C:\GitHub\cse5525-final-project>
+
+
+
+
+
+FinancialBERT on its test dataset
+
+(nlp_fp) C:\GitHub\cse5525-final-project>python BERT_FinancialBERT_test_f1.py --model_name FinancialBERT
+inside of load_data
+Processing file: ./combined_model_data/processed_test_stockemo_with_dates.csv
+Successfully loaded 1000 examples from ./combined_model_data/processed_test_stockemo_with_dates.csv
+Some weights of BertForSequenceClassification were not initialized from the model checkpoint at ./FinancialBert/financial_bert_model and are newly initialized: ['bert.pooler.dense.bias', 'bert.pooler.dense.weight', 'classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+Some weights of BertForSequenceClassification were not initialized from the model checkpoint at ./FinancialBert/financial_bert_model and are newly initialized: ['bert.pooler.dense.bias', 'bert.pooler.dense.weight', 'classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+C:\GitHub\cse5525-final-project\BERT_FinancialBERT_test_f1.py:157: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  checkpoint = torch.load(path, map_location=DEVICE)
+Successfully loaded model from checkpoint\FinancialBERT_experiments\FinancialBERT_experiment_13.pt
+Evaluating: 100%|██████████████████████████████████████████████████████████████████████| 63/63 [03:22<00:00,  3.21s/it]
+Test Accuracy: 0.7060
+Test F1 Score: 0.7055
+
+(nlp_fp) C:\GitHub\cse5525-final-project>
+
+
+
+
+
+Combined model using BERT
+
+(nlp_fp) C:\GitHub\cse5525-final-project>python combined_model.py --model_name BERT --base_confidence 0.65 --confidence_threshold 0.10 --boost_confidence 0.10
+AAPL: Accuracy = 0.8989
+BA: Accuracy = 0.8833
+ERROR: No auto-regression data found for TSLA
+ERROR: No auto-regression data found for FB
+MSFT: Accuracy = 0.8400
+GOOG: Accuracy = 0.5000
+AMZN: Accuracy = 0.9310
+DIS: Accuracy = 0.8966
+CCL: Accuracy = 0.9167
+GOOGL: Accuracy = 0.7500
+NVDA: Accuracy = 0.8750
+ERROR: No auto-regression data found for BABA
+SBUX: Accuracy = 0.0000
+MCD: Accuracy = 1.0000
+XOM: Accuracy = 1.0000
+V: Accuracy = 0.7500
+NFLX: Accuracy = 0.8000
+ERROR: No auto-regression data found for PYPL
+WMT: Accuracy = 1.0000
+NKE: Accuracy = 1.0000
+UPS: Accuracy = 1.0000
+JPM: Accuracy = 1.0000
+PFE: Accuracy = 0.8824
+ERROR: No auto-regression data found for ABNB
+UNH: Accuracy = 1.0000
+BAC: Accuracy = 0.8571
+HD: Accuracy = 0.6667
+KO: Accuracy = 1.0000
+MA: Accuracy = 1.0000
+ERROR: No auto-regression data found for BRK.B
+JNJ: Accuracy = 1.0000
+
+Overall Accuracy: 0.8857, Correct Predictions: 310, Total Predictions: 350
+
+Base Confidence: 0.65, Confidence Threshold: 0.1
+Sentiment Model Used: BERT
+
+(nlp_fp) C:\GitHub\cse5525-final-project>
+
+
+
+
+
+Combined model using FinancialBERT
+
+(nlp_fp) C:\GitHub\cse5525-final-project>python combined_model.py --model_name FinancialBERT --base_confidence 0.65 --confidence_threshold 0.10 --boost_confidence 0.10
+AAPL: Accuracy = 0.8989
+BA: Accuracy = 0.8833
+ERROR: No auto-regression data found for TSLA
+ERROR: No auto-regression data found for FB
+MSFT: Accuracy = 0.8400
+GOOG: Accuracy = 0.5000
+AMZN: Accuracy = 0.9310
+DIS: Accuracy = 0.8966
+CCL: Accuracy = 0.9167
+GOOGL: Accuracy = 0.7500
+NVDA: Accuracy = 0.8750
+ERROR: No auto-regression data found for BABA
+SBUX: Accuracy = 0.0000
+MCD: Accuracy = 1.0000
+XOM: Accuracy = 1.0000
+V: Accuracy = 0.7500
+NFLX: Accuracy = 0.8000
+ERROR: No auto-regression data found for PYPL
+WMT: Accuracy = 1.0000
+NKE: Accuracy = 1.0000
+UPS: Accuracy = 1.0000
+JPM: Accuracy = 1.0000
+PFE: Accuracy = 0.8824
+ERROR: No auto-regression data found for ABNB
+UNH: Accuracy = 1.0000
+BAC: Accuracy = 0.8571
+HD: Accuracy = 0.6667
+KO: Accuracy = 1.0000
+MA: Accuracy = 1.0000
+ERROR: No auto-regression data found for BRK.B
+JNJ: Accuracy = 1.0000
+
+Overall Accuracy: 0.8857, Correct Predictions: 310, Total Predictions: 350
+
+Base Confidence: 0.65, Confidence Threshold: 0.1
+Sentiment Model Used: FinancialBERT
+
+(nlp_fp) C:\GitHub\cse5525-final-project>
+
+
+
+
+
+AutoRegresion on its test set 2020
+
+(nlp_fp) C:\GitHub\cse5525-final-project>python auto_regression_smoothing.py
+[WARNING] Dropped columns due to NaNs: ['BABA_close', 'META_close', 'PYPL_close', 'TSLA_close']
+Training AutoReg for AAPL_close...
+Training AutoReg for AMT_close...
+Training AutoReg for AMZN_close...
+Training AutoReg for BA_close...
+Training AutoReg for BAC_close...
+Training AutoReg for BKNG_close...
+Training AutoReg for BRK_B_close...
+Training AutoReg for CCL_close...
+Training AutoReg for CVX_close...
+Training AutoReg for DIS_close...
+Training AutoReg for GOOG_close...
+Training AutoReg for GOOGL_close...
+Training AutoReg for HD_close...
+Training AutoReg for JNJ_close...
+Training AutoReg for JPM_close...
+Training AutoReg for KO_close...
+Training AutoReg for LOW_close...
+Training AutoReg for MA_close...
+Training AutoReg for MCD_close...
+Training AutoReg for MSFT_close...
+Training AutoReg for NFLX_close...
+Training AutoReg for NKE_close...
+Training AutoReg for NVDA_close...
+Training AutoReg for PFE_close...
+Training AutoReg for PG_close...
+Training AutoReg for SBUX_close...
+Training AutoReg for TM_close...
+Training AutoReg for TSM_close...
+Training AutoReg for UNH_close...
+Training AutoReg for UPS_close...
+Training AutoReg for V_close...
+Training AutoReg for WMT_close...
+Training AutoReg for XOM_close...
+Training AutoReg for ^GSPC_close...
+
+Validation Results:
+AAPL_close: MSE = 0.0009, Directional Accuracy = 0.9231
+AMT_close: MSE = 0.0000, Directional Accuracy = 0.9231
+AMZN_close: MSE = 0.0003, Directional Accuracy = 0.8419
+BA_close: MSE = 0.0010, Directional Accuracy = 0.8803
+BAC_close: MSE = 0.0017, Directional Accuracy = 0.8974
+BKNG_close: MSE = 0.0001, Directional Accuracy = 0.9060
+BRK_B_close: MSE = 0.0000, Directional Accuracy = 0.8974
+CCL_close: MSE = 0.0001, Directional Accuracy = 0.8974
+CVX_close: MSE = 0.0001, Directional Accuracy = 0.8846
+DIS_close: MSE = 0.0000, Directional Accuracy = 0.8803
+GOOG_close: MSE = 0.0001, Directional Accuracy = 0.9402
+GOOGL_close: MSE = 0.0001, Directional Accuracy = 0.9402
+HD_close: MSE = 0.0002, Directional Accuracy = 0.8846
+JNJ_close: MSE = 0.0011, Directional Accuracy = 0.8376
+JPM_close: MSE = 0.0001, Directional Accuracy = 0.8846
+KO_close: MSE = 0.0004, Directional Accuracy = 0.8675
+LOW_close: MSE = 0.0002, Directional Accuracy = 0.9188
+MA_close: MSE = 0.0001, Directional Accuracy = 0.9145
+MCD_close: MSE = 0.0000, Directional Accuracy = 0.9103
+MSFT_close: MSE = 0.0000, Directional Accuracy = 0.8846
+NFLX_close: MSE = 0.0067, Directional Accuracy = 0.8718
+NKE_close: MSE = 0.0008, Directional Accuracy = 0.9103
+NVDA_close: MSE = 0.0000, Directional Accuracy = 0.9316
+PFE_close: MSE = 0.0002, Directional Accuracy = 0.9145
+PG_close: MSE = 0.0001, Directional Accuracy = 0.8889
+SBUX_close: MSE = 0.0000, Directional Accuracy = 0.9487
+TM_close: MSE = 0.0003, Directional Accuracy = 0.8846
+TSM_close: MSE = 0.0000, Directional Accuracy = 0.9487
+UNH_close: MSE = 0.0001, Directional Accuracy = 0.9060
+UPS_close: MSE = 0.0001, Directional Accuracy = 0.9188
+V_close: MSE = 0.0001, Directional Accuracy = 0.9145
+WMT_close: MSE = 0.0009, Directional Accuracy = 0.8419
+XOM_close: MSE = 0.0003, Directional Accuracy = 0.9188
+^GSPC_close: MSE = 0.0000, Directional Accuracy = 0.9658
+Lag of 8. Average MSE: 0.0004772804310636441, Average Directional Accuracy: 0.9023378582202111
+Training AutoReg for AAPL_close...
+Training AutoReg for AMT_close...
+Training AutoReg for AMZN_close...
+Training AutoReg for BA_close...
+Training AutoReg for BAC_close...
+Training AutoReg for BKNG_close...
+Training AutoReg for BRK_B_close...
+Training AutoReg for CCL_close...
+Training AutoReg for CVX_close...
+Training AutoReg for DIS_close...
+Training AutoReg for GOOG_close...
+Training AutoReg for GOOGL_close...
+Training AutoReg for HD_close...
+Training AutoReg for JNJ_close...
+Training AutoReg for JPM_close...
+Training AutoReg for KO_close...
+Training AutoReg for LOW_close...
+Training AutoReg for MA_close...
+Training AutoReg for MCD_close...
+Training AutoReg for MSFT_close...
+Training AutoReg for NFLX_close...
+Training AutoReg for NKE_close...
+Training AutoReg for NVDA_close...
+Training AutoReg for PFE_close...
+Training AutoReg for PG_close...
+Training AutoReg for SBUX_close...
+Training AutoReg for TM_close...
+Training AutoReg for TSM_close...
+Training AutoReg for UNH_close...
+Training AutoReg for UPS_close...
+Training AutoReg for V_close...
+Training AutoReg for WMT_close...
+Training AutoReg for XOM_close...
+Training AutoReg for ^GSPC_close...
+
+Test Results:
+AAPL_close: MSE = 0.0042, Directional Accuracy = 0.9191
+AMT_close: MSE = 0.0027, Directional Accuracy = 0.8298
+AMZN_close: MSE = 0.0003, Directional Accuracy = 0.8638
+BA_close: MSE = 0.0002, Directional Accuracy = 0.8553
+BAC_close: MSE = 0.0001, Directional Accuracy = 0.8809
+BKNG_close: MSE = 0.0001, Directional Accuracy = 0.8766
+BRK_B_close: MSE = 0.0001, Directional Accuracy = 0.8894
+CCL_close: MSE = 0.0002, Directional Accuracy = 0.9021
+CVX_close: MSE = 0.0006, Directional Accuracy = 0.8936
+DIS_close: MSE = 0.0001, Directional Accuracy = 0.9106
+GOOG_close: MSE = 0.0008, Directional Accuracy = 0.9021
+GOOGL_close: MSE = 0.0008, Directional Accuracy = 0.9021
+HD_close: MSE = 0.0003, Directional Accuracy = 0.9064
+JNJ_close: MSE = 0.0002, Directional Accuracy = 0.8681
+JPM_close: MSE = 0.0001, Directional Accuracy = 0.8426
+KO_close: MSE = 0.0008, Directional Accuracy = 0.8766
+LOW_close: MSE = 0.0002, Directional Accuracy = 0.9191
+MA_close: MSE = 0.0014, Directional Accuracy = 0.8894
+MCD_close: MSE = 0.0017, Directional Accuracy = 0.8894
+MSFT_close: MSE = 0.0015, Directional Accuracy = 0.8511
+NFLX_close: MSE = 0.0004, Directional Accuracy = 0.8128
+NKE_close: MSE = 0.0003, Directional Accuracy = 0.8894
+NVDA_close: MSE = 0.0008, Directional Accuracy = 0.9106
+PFE_close: MSE = 0.0001, Directional Accuracy = 0.8638
+PG_close: MSE = 0.0003, Directional Accuracy = 0.8894
+SBUX_close: MSE = 0.0004, Directional Accuracy = 0.8766
+TM_close: MSE = 0.0001, Directional Accuracy = 0.8596
+TSM_close: MSE = 0.0003, Directional Accuracy = 0.8681
+UNH_close: MSE = 0.0001, Directional Accuracy = 0.8596
+UPS_close: MSE = 0.0002, Directional Accuracy = 0.8979
+V_close: MSE = 0.0012, Directional Accuracy = 0.8128
+WMT_close: MSE = 0.0006, Directional Accuracy = 0.8000
+XOM_close: MSE = 0.0003, Directional Accuracy = 0.9064
+^GSPC_close: MSE = 0.0004, Directional Accuracy = 0.9149
+Lag of 8. Average MSE: 0.0006436714642021377, Average Directional Accuracy: 0.8773466833541925
+
+(nlp_fp) C:\GitHub\cse5525-final-project>
