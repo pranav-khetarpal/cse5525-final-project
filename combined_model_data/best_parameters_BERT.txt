@@ -1,0 +1,4 @@
+Model: BERT
+Base Confidence: 0.31
+Confidence Threshold: 0.1
+Accuracy: 0.8857
