@@ -33,7 +33,7 @@ def get_args():
 
     return parser.parse_args()
 
-def confidence_for_stock_and_day(regression_direction, average_sentiment, base_confidence, confidence_threshold):
+def confidence_for_stock_and_day(auto_regression_direction, average_sentiment, base_confidence, confidence_threshold):
     """
     """
 
@@ -41,14 +41,14 @@ def confidence_for_stock_and_day(regression_direction, average_sentiment, base_c
     bert_direction = 1 if average_sentiment > 0.5 else 0
 
     # If both agree, boost confidence
-    if regression_direction == bert_direction:
+    if auto_regression_direction == bert_direction:
         final_confidence = base_confidence + (0.2 * abs(average_sentiment - 0.5) * 2)
     else:
         # If disagree, reduce confidence based on sentiment strength
         final_confidence = base_confidence - (0.2 * abs(average_sentiment - 0.5) * 2)
 
     # Final prediction remains the regression direction, but with adjusted confidence
-    final_prediction = regression_direction
+    final_prediction = auto_regression_direction
     confidence = final_confidence
 
     if confidence < confidence_threshold:
@@ -72,8 +72,20 @@ def main():
     auto_regression_direction_df = pd.read_csv(AUTOREGRESSION_TEST_DIRECTION_PATH)
     actual_direction_df = pd.read_csv(ACTUAL_TEST_DIRECTION_PATH)
 
-    for index, row in sentiment_df.itterows():
-        for column in sentiment_df.columns():
+    correct_predictions = 0
+    total_predictions = 0
+
+    stock_accurracies = {}
+
+    for column in sentiment_df.columns:
+        if column == "date":
+            continue
+
+        stock = column.spli('_')[-1] # get the stock name
+
+        for auto_regression_column in auto_regression_direction_df.columns:
+            if stock in auto_regression_column:
+                
             average_sentiment = row[column]
 
 
