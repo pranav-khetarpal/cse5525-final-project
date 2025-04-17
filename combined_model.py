@@ -4,7 +4,7 @@ import argparse
 BERT_TEST_SENTIMENT_PATH = "combined_model_data/BERT_average_sentiment_per_stock.csv"
 FINANCIALBERT_TEST_SENTIMENT_PATH = "combined_model_data/FinancialBERT_average_sentiment_per_stock.csv"
 AUTOREGRESSION_TEST_DIRECTION_PATH = "combined_model_data/auto_regression_test_predictions.csv"
-ACTUAL_TEST_DIRECTION_PATH = "combined_model_data/actual_test_predictions.csv"
+ACTUAL_TEST_DIRECTION_PATH = "combined_model_data/actual_test_prediction.csv"
 
 def get_args():
     parser = argparse.ArgumentParser(description="Combined model")
@@ -56,6 +56,9 @@ def prediction_for_stock_and_day(auto_regression_direction, average_sentiment, b
             final_prediction = 0
         else:
             final_prediction = 1
+    
+    # print(f"regression prediction: {final_prediction}")
+    # print(f"sentiment score {average_sentiment}")
 
     return final_prediction
 
@@ -139,7 +142,7 @@ def main():
 
     if total_predictions > 0:
         accurracy = correct_predictions / total_predictions
-        print(f"\nOverall Accuracy: {accurracy:.4f}")
+        print(f"\nOverall Accuracy: {accurracy:.4f}, Correct Predictions: {correct_predictions}, Total Predictions: {total_predictions}")
 
         print(f"\nBase Confidence: {args.base_confidence}, Confidence Threshold: {args.confidence_threshold}")
         print(f"Sentiment Model Used: {args.model_name}")
